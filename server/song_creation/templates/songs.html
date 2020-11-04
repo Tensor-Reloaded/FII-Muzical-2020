@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Songs Board Homepage</title>
+  </head>
+  <body>
+    <h2> Welcome to the Songs board </h2>
+
+    {% for song in songs %}
+      <div>
+        <a href="/songs/{{ song.id }}">{{ song.name }}</a>
+      </div>
+    {% endfor %}
+    <br>
+    <p>Create song</p>
+    <form action="/songs/create" method="POST">
+      {% csrf_token %}
+      <input type="text" name="name" id="name" placeholder="Song name"/>
+      <input type="text" name="genre" id="genre" placeholder="Song genre"/>
+      <input type="hidden" name="vocals" id="vocals" value="1" />
+      <input type="hidden" name="lyrics" id="lyrics" value="1" />
+      <input type="submit" value="Create song" />
+    </form>
+    <hr>
+  </body>
+</html>
