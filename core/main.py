@@ -23,8 +23,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-# Input processor observable care se ocupa de cititul fisierelor
-# In momentul cand un fisier e gata decodat inputul este pasat la observeri (neural_network_data_feeder)
-# Citirea se face printr-un apel process_next()
