@@ -4,6 +4,8 @@ __pycache__/
 *$py.class
 *.pth
 .hydra
+__pycache__
+.idea
 
 **/events.out.tfevents.*
 # C extensions
