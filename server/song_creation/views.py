@@ -3,6 +3,8 @@ from django.shortcuts import render
 from .models import Song
 from .models import Task
 from .signals import new_task
+from .serializers import SongSerializer, TaskSerializer
+from rest_framework import viewsets
 
 def get_songs(request):
     songs = Song.objects.all()
@@ -29,3 +31,11 @@ def create(request):
       'lyrics': request.POST['lyrics']
     }
     return render(request, 'created.html', {'payload': payload})
+
+class SongViewSet(viewsets.ModelViewSet):
+    queryset = Song.objects.all()
+    serializer_class = SongSerializer
+
+class TaskViewSet(viewsets.ModelViewSet):
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
