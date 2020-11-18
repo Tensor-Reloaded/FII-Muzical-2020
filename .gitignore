@@ -109,4 +109,5 @@ venv.bak/
 .mypy_cache/
 
 
-lmd_matched_h5
+lmd_matched_h5/
+lmd_matched/
