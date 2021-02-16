@@ -7,14 +7,25 @@ __pycache__/
 __pycache__
 .idea
 .vscode
+.DS_Store
+**/.DS_Store
 
 **/events.out.tfevents.*
 # C extensions
 *.so
 
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# Local History for Visual Studio Code
+.history/
+
 # Distribution / packaging
 .Python
-
 build/
 develop-eggs/
 dist/
