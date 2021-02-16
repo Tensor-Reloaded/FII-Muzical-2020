@@ -1,6 +1,6 @@
 import torch
 from multiheadattention import MultiHeadAttention
-from pointwisefeedforwardnetwork import PointWiseFeedForwardNetwork
+from pointwisefeedforward import PointWiseFeedForwardNetwork
 
 
 class EncoderLayer(torch.nn.Module):
@@ -12,9 +12,9 @@ class EncoderLayer(torch.nn.Module):
         self.dropout_layer_1 = torch.nn.Dropout(dropout_rate)
         self.dropout_layer_2 = torch.nn.Dropout(dropout_rate)
 
-    def compute(self, x, train, mask):
-        attention_output, _ = self.multi_head_attention.compute(x, x, x, mask)
-        attention_output = self.dropout_layer_1(attention_output) ## tbd training
+    def compute(self, x):
+        attention_output, _ = self.multi_head_attention.compute(x, x, x)
+        attention_output = self.dropout_layer_1(attention_output)
         
         m = attention_output + x
         norm1 = torch.nn.LayerNorm(m.size()[1:])
