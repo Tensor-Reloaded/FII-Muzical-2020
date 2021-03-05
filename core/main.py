@@ -23,7 +23,7 @@ X, Y = data.get_dataset(maxlen, 1)
 print("Vocab size:", vocab_size)
 print("Number of files", len(X))
 
-input_notes = "Piano-right_C4_1.25 nextOffset Piano-right_C4_1.25"
+input_notes = "Piano-right_B4_0.5 Piano-left_C#3.G#3.B3_0.5 nextOffset"
 input_notes_tokens = data.vectorize(notes = input_notes)
 
 def loss_function(real, pred):
@@ -58,7 +58,7 @@ def model_train(epochs):
             if epoch % 10 == 0:
                 print("Epoch: ", epoch, "Loss: ",loss.item())
 
-        if epoch % 25 == 0:
+        if epoch % 25 == 0 and epoch > 100:
             model.eval()
             start_tokens = [_ for _ in input_notes_tokens]
             count = 0
@@ -84,7 +84,7 @@ def model_train(epochs):
                 generated.append(s)
                 start_tokens.append(s)
                 count = len(generated)
-            print(input_notes_tokens, generated)
+            print(start_tokens,input_notes_tokens, generated)
             notes = ""
             for el in input_notes_tokens:
                 notes += str(vocab[el]) + " "
@@ -97,4 +97,4 @@ def model_train(epochs):
 
 
 if __name__ == "__main__":
-    model_train(400)
+    model_train(1000)

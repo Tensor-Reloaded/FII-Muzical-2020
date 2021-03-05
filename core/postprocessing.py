@@ -39,7 +39,7 @@ class PostprocessMidi:
             if val[0] == "nextOffset":
                 if last_instrument != "nextOffset":
                     last_instrument = "nextOffset"
-                    self.offset += 0.4
+                    self.offset += 0.35
 
         midi_stream = stream.Stream(self.output_notes)
         midi_stream.write('midi', fp=self.path_output+str(name)+".mid")

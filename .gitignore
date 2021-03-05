@@ -126,3 +126,5 @@ lmd_matched_h5/
 lmd_matched/
 .DS_Store
 .DS_Store
+*.npy
+*.mid
