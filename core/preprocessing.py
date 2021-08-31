@@ -3,83 +3,62 @@ import numpy as np
 import json
 import os
 
-listInstruments = ["Instrument", "Accordion", "AcousticBass", "AcousticGuitar", "Agogo", "Alto", "AltoSaxophone",
-                   "Bagpipes", "Banjo", "Baritone", "BaritoneSaxophone", "Bass", "BassClarinet", "BassDrum",
-                   "BassTrombone", "Bassoon", "BongoDrums", "BrassInstrument", "Castanets", "Celesta", "ChurchBells",
-                   "Clarinet", "Clavichord", "Conductor", "CongaDrum", "Contrabass", "Contrabassoon", "Cowbell",
-                   "CrashCymbals", "Cymbals", "Dulcimer", "ElectricBass", "ElectricGuitar", "ElectricOrgan",
-                   "EnglishHorn", "FingerCymbals", "Flute", "FretlessBass", "Glockenspiel", "Gong", "Guitar",
-                   "Handbells", "Harmonica", "Harp", "Harpsichord", "HiHatCymbal", "Horn", "Kalimba",
-                   "KeyboardInstrument", "Koto", "Lute", "Mandolin", "Maracas", "Marimba", "MezzoSoprano", "Oboe",
-                   "Ocarina", "Organ", "PanFlute", "Percussion", "Piano", "Piano right", "Piano left", "Piccolo",
-                   "PipeOrgan", "PitchedPercussion", "Ratchet", "Recorder", "ReedOrgan", "RideCymbals",
-                   "SandpaperBlocks", "Saxophone", "Shakuhachi", "Shamisen", "Shehnai", "Siren", "Sitar",
-                   "SizzleCymbal", "SleighBells", "SnareDrum", "Soprano", "SopranoSaxophone", "SplashCymbals",
-                   "SteelDrum", "StringInstrument", "SuspendedCymbal", "Taiko", "TamTam", "Tambourine", "TempleBlock",
-                   "Tenor", "TenorDrum", "TenorSaxophone", "Timbales", "Timpani", "TomTom", "Triangle", "Trombone",
-                   "Trumpet", "Tuba", "TubularBells", "Ukulele", "UnpitchedPercussion", "Vibraphone", "Vibraslap",
-                   "Viola", "Violin", "Violoncello", "Vocalist", "Whip", "Whistle", "WindMachine", "Woodblock",
-                   "WoodwindInstrument", "Xylophone", "Functions"]
-
-
 class PreprocessMidi:
     def __init__(self):
         self.path_file = None
         self.midi = None
         self.instruments = []
         self.notes = []
-        self.path_vocabulary = "data/vocabulary.json"
-        self.top_vocabulary = "data/top_index_vocabulary.json"
         self.vocab = {}
-        self.vocab_top = {1: 0}
-        self.path_dataset = "data/dataset.json"
         self.dataset = {}
+        self.path_vocabulary = "data/vocabulary.json"
+        self.path_dataset = "data/dataset.json"
+        self.top_vocabulary = "data/top_index_vocabulary.json"
         self.path_parsed_data = "data/processed_midi/"
-        self.maxlen = 100
 
-    def parse_file(self, path_files):
-        self.path_file = path_files
-        self.midi = converter.parse(self.path_file)
-
-    def extract_notes_from_instrument(self, midi_part, name, filename):
-        count = 0
-        for el in midi_part.flat.notes:
-            if count < self.maxlen:
-                val = "None"
-                if str(el.offset) not in self.dataset[filename].keys():
-                    self.dataset[filename][str(el.offset)] = []
-
+    def extract_notes_from_instrument(self, song, filename):
+        s = song.parts.stream()
+        for part in s:
+            notes_to_parse = part.flat.notes
+            for el in notes_to_parse:
+                instrument_name = part.partName
+                if " " in instrument_name:
+                    instrument_name = instrument_name.replace(" ","-")
+                el_duration = str(el.duration.quarterLength)
                 if isinstance(el, note.Note):
-                    if str(el.pitch) not in self.vocab[name].keys():
-                        self.vocab[name][str(el.pitch)] = set()
-                    self.vocab[name][str(el.pitch)].add(str(el.duration.quarterLength))
-                    val = name.replace(" ", "-") + "_" + str(el.pitch) + "_" + str(el.duration.quarterLength)
-
+                    data = str(el.pitch)
+                    
                 elif isinstance(el, chord.Chord):
-                    chordValues = '.'.join(str(n.pitch) for n in el)
-                    if str(chordValues) not in self.vocab[name].keys():
-                        self.vocab[name][str(chordValues)] = set()
-                    self.vocab[name][str(chordValues)].add(str(el.duration.quarterLength))
-                    val = name.replace(" ", "-") + "_" + str(chordValues) + "_" + str(el.duration.quarterLength)
-                self.dataset[filename][str(el.offset)].append(val)
-            count += 1
+                    data = '.'.join(str(n.pitch) for n in el)            
+                result = instrument_name + "_" + data + "_" + el_duration
+            
+                if "/" in str(el.offset):
+                    x = str(el.offset).split("/")
+                    r = int(x[0])/int(x[1])
+                    r = str(round(r, 2))
+                else:
+                    r = str(el.offset)
 
-    def create_dataset(self, path, maxlen):
-        self.maxlen = maxlen
+                if instrument_name not in self.instruments:
+                    self.instruments.append(instrument_name)
+                    self.vocab[instrument_name] = {}
+
+                if data not in self.vocab[instrument_name].keys():
+                    self.vocab[instrument_name][data] = set()
+
+                if r not in self.dataset[filename].keys():
+                    self.dataset[filename][r] = []
+                
+                self.vocab[instrument_name][data].add(str(el.duration.quarterLength))
+                self.dataset[filename][r].append(result)
+
+    def create_dataset(self, path):
         for filename in os.listdir(path):
-            print("Done: ", filename)
-            self.midi = converter.parse(path + filename)
-            self.dataset[filename] = {}
-
-            for i in range(len(self.midi.parts)):
-                instrument_name = self.midi.parts[i].partName
-                # print(str(instrument_name))
-                if str(instrument_name) in listInstruments:
-                    if str(instrument_name) not in self.instruments:
-                        self.instruments.append(instrument_name)
-                        self.vocab[instrument_name] = {}
-                    instrument_notes = self.midi.parts[i].flat.notes
-                    self.extract_notes_from_instrument(instrument_notes, instrument_name, filename)
+            if filename.endswith('.mid'):
+                print("Done: ", filename)
+                midi = converter.parse(path + filename)
+                self.dataset[filename] = {}
+                self.extract_notes_from_instrument(midi, filename)
 
         self.save_dictionary(self.path_vocabulary, self.vocab)
         self.save_dictionary(self.path_dataset, self.dataset)
@@ -96,71 +75,83 @@ class PreprocessMidi:
     def get_vocabulary(self, path):
         with open(path) as f:
             data = json.load(f)
-        result = ["[NONE]", "nextOffset"]
+        vocab = ["0.35"]
         for instrument in data.keys():
             for notes in data[instrument].keys():
                 for duration in data[instrument][notes]:
-                    result.append(str(instrument).replace(" ", "-") + "_" + str(notes) + "_" + str(duration))
+                    vocab.append(str(instrument).replace(" ", "-") + "_" + str(notes) + "_" + str(duration))
+        return vocab
+
+    def get_json_dataset(self, path):
+        with open(path) as f:
+            dataset = json.load(f)
+        return dataset
+
+    def process_song(self, song, vocabulary):
+        song_offsets = list(song.keys())
+        a = np.array(song_offsets, dtype=float)
+        a = np.sort(a)
+        result = []
+        for el in range(len(a)-1):
+            t = str(a[el])
+            # data = vocabulary.index(str(round(a[el+1] - a[el],2)))
+            # result.append(data)
+            result.append(0)
+            for val in song[t]:
+                data = vocabulary.index(val)
+                result.append(data)
+            
         return result
 
-    def process_dataset(self, path, vocab_path):
-        vocabulary = self.get_vocabulary(vocab_path)
-        with open(path) as f:
-            dataset = json.load(f)
-        melodies = dataset.keys()
-        for m in melodies:
-            song = []
-            for k in dataset[m].keys():
-                for el in dataset[m][k]:
-                    if vocabulary.index(el) not in self.vocab_top.keys():
-                        self.vocab_top[vocabulary.index(el)] = 1
-                    else:
-                        self.vocab_top[vocabulary.index(el)] += 1
-                    song.append(vocabulary.index(el))
-                song.append(1)
-                self.vocab_top[1] += 1
-
-            path = "data/processed_midi/" + m.replace(".mid", "")
-            data = np.array(song)
-            # print(data.shape)
+    def process_dataset(self, json_dataset_path, vocab_path):
+        vocab = self.get_vocabulary(vocab_path)
+        json_dataset = self.get_json_dataset(json_dataset_path)
+        for song in json_dataset.keys():
+            data = np.array(self.process_song(json_dataset[song], vocab))
+            path = "data/processed_midi/" + song.replace(".mid", "")
             np.save(path, data)
-        self.save_dictionary(self.top_vocabulary, self.vocab_top)
-
-    def get_instruments(self, path):
-        with open(path) as f:
-            dataset = json.load(f)
-        melodies = dataset.keys()
-        print(melodies)
 
     def vectorize(self, notes):
-        vocabulary = self.get_vocabulary(self.path_vocabulary)
+        vocab = self.get_vocabulary(self.path_vocabulary)
         result = []
-        for note in notes.split():
-            result.append(vocabulary.index(note))
+        for note in notes:
+            result.append(vocab.index(note))
         return np.asarray(result)
 
-    def get_dataset(self, maxlen, skip):
+    def get_patch(self, patch_size, data):
+        cross_point = int(patch_size/2)
+        h = int(data.shape[0] / patch_size)
+        a = int( h * patch_size / cross_point)
+        x1 = data[:a*cross_point].reshape(a, cross_point)
+        x2 = data[:a*cross_point].reshape(a, cross_point)
+        x1 = np.delete(x1, (-1), axis=0)
+        x2 = np.delete(x2, (0), axis=0)
+        result = np.concatenate((x1, x2),axis=1)
+        result = np.vstack([result, data[data.shape[0]-patch_size:]])
+        return result
+
+    def get_dataset(self, patch_size, skip):
         files = os.listdir(self.path_parsed_data)
-        nrOfFiles = 0
-        for i in range(len(files)):
-            if files[i].endswith('.npy'):
-                nrOfFiles += 1
-
-        X = np.zeros((nrOfFiles, maxlen), dtype=int)
-        Y = np.zeros((nrOfFiles, maxlen), dtype=int)
-
         el = 0
-        for i in range(len(files)):
-            if files[i].endswith('.npy'):
-                data = np.load(self.path_parsed_data + files[i])
-                if data.shape[0] >= maxlen + skip:
-                    X[el] = data[:maxlen]
-                    Y[el] = data[skip:maxlen + skip]
-                el += 1
-
+        for file in files:
+            if file.endswith('.npy'):
+                dataX = np.load(self.path_parsed_data + file)
+                dataY = dataX[skip:]
+                dataY = np.append(dataY, [0]*skip)
+                if el == 0:
+                    X = self.get_patch(patch_size, dataX)
+                    Y = self.get_patch(patch_size, dataY)
+                else:
+                    X = np.concatenate((X, self.get_patch(patch_size, dataX)),axis=0)
+                    Y = np.concatenate((Y, self.get_patch(patch_size, dataY)),axis=0)
+                el+=1
         return X, Y
+
+if __name__ == "__main__":
+    p = PreprocessMidi()
+    p.create_dataset("data/input_songs/Piano/")
+    p.process_dataset("data/dataset.json", "data/vocabulary.json")
 
 # if __name__ == "__main__":
 #     p = PreprocessMidi()
-#     p.create_dataset("data/input_songs/Piano/", 100)
-#     p.process_dataset("data/dataset.json", "data/vocabulary.json")
+#     p.get_dataset(64,3)

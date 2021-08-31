@@ -10,20 +10,20 @@ convert_midi = PostprocessMidi()
 vocab = data.get_vocabulary('data/vocabulary.json')
 vocab_size = len(vocab)
 
-batch_size = 4
-maxlen = 300
+batch_size = 32
+maxlen = 256
 num_layers = 2
-dimension_model = 128
-num_heads = 2
-feed_forward_dim = 256
-output_size = 64
+dimension_model = 1024
+num_heads = 4
+feed_forward_dim = 1024
+output_size = 176
 
 X, Y = data.get_dataset(maxlen, 1)
 
 print("Vocab size:", vocab_size)
-print("Number of files", len(X))
+print("Dataset size", len(X))
 
-input_notes = "Piano-right_B4_0.5 Piano-left_C#3.G#3.B3_0.5 nextOffset"
+input_notes = ["0.35"]
 input_notes_tokens = data.vectorize(notes = input_notes)
 
 def loss_function(real, pred):
@@ -39,7 +39,7 @@ def sample(logits):
 def model_train(epochs):
     model = Transformer(num_layers, dimension_model, num_heads, feed_forward_dim,
                         vocab_size, vocab_size, maxlen)
-    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.0003, betas=(0.9, 0.98), eps=1e-9)
+    optimizer = torch.optim.Adam(params=model.parameters(), lr=0.001, betas=(0.9, 0.98), eps=1e-9)
     output_midi_count = 0
     for epoch in range(epochs):
         model.train()
@@ -55,10 +55,9 @@ def model_train(epochs):
             torch.nn.utils.clip_grad_norm_(model.parameters(), 0.5)
             optimizer.step()
 
-            if epoch % 10 == 0:
-                print("Epoch: ", epoch, "Loss: ",loss.item())
+            print("Epoch: ", epoch, "Loss: ",loss.item())
 
-        if epoch % 25 == 0 and epoch > 100:
+        if epoch % 10 == 0 and epoch > 5:
             model.eval()
             start_tokens = [_ for _ in input_notes_tokens]
             count = 0
@@ -85,16 +84,16 @@ def model_train(epochs):
                 start_tokens.append(s)
                 count = len(generated)
             print(start_tokens,input_notes_tokens, generated)
-            notes = ""
+            notes = []
             for el in input_notes_tokens:
-                notes += str(vocab[el]) + " "
+                notes.append(vocab[el])
             for el in generated:
-                notes += str(vocab[el]) + " "
-            # print(notes)
-            convert_midi.compute_song(notes, "midi_ver_"+str(output_midi_count))
+                notes.append(vocab[el])
+            print(notes)
+            convert_midi.compute_song(notes, "midi_version_"+str(output_midi_count))
             output_midi_count +=1
             
 
 
 if __name__ == "__main__":
-    model_train(1000)
+    model_train(300)
